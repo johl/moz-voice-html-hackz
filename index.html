@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+  <title>Mozilla Voice Recognition Hackz</title>
+  <!-- <script type="javascript" src="./recognition.js"></script> -->
+  <!-- <a href="#" target="_blank">Link</a> -->
+  <body>
+    <button>
+      SPEECH SEARCH
+    </button>
+    <p class="output">
+      <ul class="links">
+      </ul>
+    </p>
+  </body>
+</html>
+
+<script type="application/javascript">
+  const Spec = {
+    initial: [
+      {
+        pattern: /(.*) for (.*)/,
+        command: 'search',
+        next: 'results',
+      },
+    ],
+    results: [
+      {
+        pattern: /(.*) the (.*) link/,
+        command: 'open',
+      },
+      {
+        pattern: /(.*) for (.*)/,
+        command: 'search',
+      },
+    ],
+  };
+
+  const Actions = {
+    search: (param) => (
+      fetch(`/search?q=${param}`)
+        .then(res => res.json())
+        .then(json => {
+          json.forEach((doc) => {
+            const li = document.createElement('li')
+            const link = document.createElement('a');
+            const links = document.querySelector('.links');
+
+            link.setAttribute('href', doc.url);
+            link.setAttribute('target', '_blank');
+            link.textContent = doc.title;
+
+            li.appendChild(link);
+            links.appendChild(li);
+          })
+        })
+    ),
+    open: () => console.log('action -> open'),
+    error: () => console.log('sorry, wt?'),
+  };
+
+  let state = Spec.initial;
+
+  const setState = (st) => {
+    state = Spec[st];
+  }
+  const getState = () => state;
+
+  const execAction = (speech) => (
+    getState().forEach((f) => {
+      const {
+        pattern,
+        command,
+        next,
+      } = f;
+
+      const match = pattern.exec(speech);
+
+      if (match && match[1] === command) {
+        Actions[command](match[2]);
+        if (next) setState(next);
+        return;
+      }
+
+      Actions.error();
+    })
+  )
+
+  const isWebKit = /WebKit/.test(navigator.userAgent);
+  const Recognition = isWebKit ? webkitSpeechRecognition : SpeechRecognition;
+  // const getGrammarList = isWebKit ? webkitSpeechGrammarList : SpeechGrammarList;
+  // const SpeechRecognitionEvent = isWebKit ? webkitSpeechRecognitionEvent : SpeechRecognitionEvent;
+  const recognition = new Recognition();
+
+  const onResult = (e) => execAction(e.results[0][0].transcript);
+  const onEnd = (e) => recognition.stop();
+
+  const speech = () => {
+    recognition.start();
+    recognition.onresult = onResult;
+    recognition.onspeechend = onEnd();
+  };
+
+  document
+    .querySelector('button')
+    .addEventListener('click', speech);
+</script>
