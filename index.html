@@ -40,7 +40,13 @@
       fetch(`/search?q=${param}`)
         .then(res => res.json())
         .then(json => {
+          var utterance = new SpeechSynthesisUtterance("We found the following results");
+          utterance.lang = 'en-US';
+          window.speechSynthesis.speak(utterance);
           json.forEach((doc) => {
+            var utterance = new SpeechSynthesisUtterance(doc.title);
+            utterance.lang = 'en-US';
+            window.speechSynthesis.speak(utterance);
             const li = document.createElement('li')
             const link = document.createElement('a');
             const links = document.querySelector('.links');
@@ -51,7 +57,10 @@
 
             li.appendChild(link);
             links.appendChild(li);
-          })
+            });
+          utterance = new SpeechSynthesisUtterance("Which link would you like to open?")
+          utterance.lang = 'en-US';
+          window.speechSynthesis.speak(utterance);
         })
     ),
     open: () => console.log('action -> open'),
